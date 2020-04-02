@@ -5,7 +5,7 @@ from bs4.element import SoupStrainer
 from urllib.parse import urlparse
 
 
-class Scrapper:
+class Scraper:
     def __init__(self, start_url):
         parsed_url = urlparse(start_url)
         self.base_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
@@ -16,34 +16,39 @@ class Scrapper:
         return bool(url.startswith("/") or self.base_url in url)
 
     def check_is_base(self, url: str) -> bool:
-        parsed_url = urlparse(f"{self.base_url}{url}")
-        return (
-            f"{self.base_url}/"
-            == f"{parsed_url.scheme}://{parsed_url.hostname}{parsed_url.path}"
-        )
+        parsed_url = urlparse(url)
+        return f"{parsed_url.scheme}://{parsed_url.hostname}{parsed_url.path}" in [
+            f"{self.base_url}/",
+            f"{self.base_url}",
+        ]
 
     def check_not_visited(self, url: str) -> bool:
         pass
 
-    def collect_page_urls(self, url:str):
+    def collect_page_urls(self, url: str):
         response = requests.get(url)
-        hrefs = list(filter(
-            lambda doctype: doctype.has_attr("href"),
-            BeautifulSoup(
-                response.text, features="html.parser", parse_only=SoupStrainer("a")
-            )),
+        hrefs = list(
+            filter(
+                lambda doctype: doctype.has_attr("href"),
+                BeautifulSoup(
+                    response.text, features="html.parser", parse_only=SoupStrainer("a")
+                ),
+            ),
         )
-        urls = [element["href"] for element in hrefs]
+        urls = [f"{self.base_url}{element['href']}" for element in hrefs]
         return list(filter(self.validate_url, urls))
 
     def validate_url(self, url: str):
         return self.check_is_site_url(url) and not self.check_is_base(url)
 
     def run(self):
-        while self.urls_to_scrape:
-            current_url = self.urls_to_scrape.pop()
-            self.urls_to_scrape.append(self.scrapper.collect_current_page_urls(current_url))
+
+        # while self.urls_to_scrape:
+        current_url = self.urls_to_scrape.pop()
+        self.urls_to_scrape.extend(self.collect_page_urls(current_url))
+        for url in self.urls_to_scrape:
+            print(url)
 
 
-scrapper = Scrapper("https://www.es.python.org/index.html")
-scrapper.run()
+scraper = Scraper("https://www.es.python.org/index.html")
+scraper.run()
