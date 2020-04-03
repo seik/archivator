@@ -26,6 +26,9 @@ class Scraper:
     def check_not_visited(self, url: str) -> bool:
         pass
 
+    def clean_url(self, url:str) -> str:
+        return f"{self.base_url}{url}" if url.startswith("/") else url 
+
     def collect_page_urls(self, url: str):
         response = requests.get(url)
         hrefs = list(
@@ -38,7 +41,10 @@ class Scraper:
         )
         urls = [f"{element['href']}" for element in hrefs]
         relative_urls = list(filter(self.validate_url, urls))
-        return [f"{self.base_url}{url}" for url in relative_urls]
+        return [
+            self.clean_url(url)
+            for url in relative_urls
+        ]
 
     def validate_url(self, url: str):
         return self.check_is_site_url(url) and not self.check_is_base(url)
@@ -58,7 +64,8 @@ class Scraper:
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
+                    print(url)
         self.archive_urls()
 
-scraper = Scraper("https://www.es.python.org/index.html")
+scraper = Scraper("https://daringfireball.net/")
 scraper.run()
