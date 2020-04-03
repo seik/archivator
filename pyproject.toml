@@ -8,6 +8,7 @@ authors = ["Iván José Martín García <ivanmartinga@gmail.com>"]
 python = "^3.8"
 beautifulsoup4 = "^4.8.2"
 requests = "^2.23.0"
+internetarchive = "^1.9.2"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.2"
