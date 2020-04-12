@@ -4,7 +4,8 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
-
+from loguru import logger
+import html
 from archivator.archiveorg import InternetArchive
 
 
@@ -26,25 +27,29 @@ class Scraper:
     def check_not_visited(self, url: str) -> bool:
         pass
 
-    def clean_url(self, url:str) -> str:
-        return f"{self.base_url}{url}" if url.startswith("/") else url 
+    def clean_url(self, url: str) -> str:
+        cleaned_url = f"{self.base_url}{url}" if url.startswith("/") else url
+        return html.unescape(cleaned_url)
 
     def collect_page_urls(self, url: str):
         response = requests.get(url)
-        hrefs = list(
-            filter(
-                lambda doctype: doctype.has_attr("href"),
-                BeautifulSoup(
-                    response.text, features="html.parser", parse_only=SoupStrainer("a")
+        if response.headers["Content-Type"] == "application/json":
+            hrefs = list(
+                filter(
+                    lambda doctype: doctype.has_attr("href"),
+                    BeautifulSoup(
+                        response.text,
+                        features="html.parser",
+                        parse_only=SoupStrainer("a"),
+                    ),
                 ),
-            ),
-        )
-        urls = [f"{element['href']}" for element in hrefs]
-        relative_urls = list(filter(self.validate_url, urls))
-        return [
-            self.clean_url(url)
-            for url in relative_urls
-        ]
+            )
+            urls = [f"{element['href']}" for element in hrefs]
+            relative_urls = list(filter(self.validate_url, urls))
+            page_urls = [self.clean_url(url) for url in relative_urls]
+        else:
+            page_urls = []
+        return page_urls
 
     def validate_url(self, url: str):
         return self.check_is_site_url(url) and not self.check_is_base(url)
@@ -59,13 +64,14 @@ class Scraper:
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
             urls = self.collect_page_urls(current_url)
-            # TODO: Add logging debug for information
             self.scraped_urls.add(current_url)
+            logger.info(f"Scrapping {current_url}")
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
-                    print(url)
+                    logger.info(f"Found {url}")
         self.archive_urls()
 
-scraper = Scraper("https://daringfireball.net/")
+
+scraper = Scraper("https://daringfireball.net/feeds/json")
 scraper.run()
