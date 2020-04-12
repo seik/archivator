@@ -33,7 +33,7 @@ class Scraper:
 
     def collect_page_urls(self, url: str):
         response = requests.get(url)
-        if response.headers["Content-Type"] == "application/json":
+        if "text/html" in response.headers["Content-Type"]:
             hrefs = list(
                 filter(
                     lambda doctype: doctype.has_attr("href"),
@@ -57,8 +57,8 @@ class Scraper:
     def archive_urls(self):
         internet_archive = InternetArchive()
         for url in self.scraped_urls:
-            sleep(0.5)
             internet_archive.archive_page(url)
+            logger.info(f"Archived: {url}")
 
     def run(self):
         while self.urls_to_scrape:
@@ -70,8 +70,12 @@ class Scraper:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
                     logger.info(f"Found {url}")
+
+        logger.info(f"Collected {len(self.scraped_urls)} URLs")
+        logger.info(f"Start archiving")
+
         self.archive_urls()
 
 
-scraper = Scraper("https://daringfireball.net/feeds/json")
+scraper = Scraper("https://ivmg.me/")
 scraper.run()
