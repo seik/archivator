@@ -6,7 +6,6 @@ from urllib.parse import urlparse
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
-from loguru import logger
 
 from archivator.archiveorg import InternetArchive
 
@@ -69,31 +68,26 @@ class Archivator:
     def archive_urls(self):
         internet_archive = InternetArchive()
         for url in self.scraped_urls:
-            self.stdout(f"Archiving {url}")
-
+            self.stdout(f"🗄️ {url}", nl=False, carriage_return=True)
             archive_url, cached = internet_archive.archive_page(url)
-
-            if not cached:
-                self.stdout(f"Archived in {archive_url}")
-            else:
-                self.stdout(f"Skipping, page was recently archived by archive.org")
 
     def run(self):
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
             urls = self.collect_page_urls(current_url)
             self.scraped_urls.add(current_url)
-            self.stdout(f"Scrapping {current_url}")
+            self.stdout(f"🔎 {current_url}", nl=False, carriage_return=True)
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
-                    logger.debug(f"Found {url}")
 
-        self.stdout(f"Collected {len(self.scraped_urls)} URLs")
-        self.stdout(f"Start archiving")
+        self.stdout("")
+        self.stdout(f"Collected {len(self.scraped_urls)} URLs", fg="green")
+        self.stdout(f"📦 Archiving")
+        self.stdout("")
 
         self.archive_urls()
 
-    def stdout(self, text: str) -> None:
+    def stdout(self, text: str, **kwargs) -> None:
         if self._stdout:
-            self._stdout(text)
+            self._stdout(text, **kwargs)
