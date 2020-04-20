@@ -67,26 +67,32 @@ class Archivator:
 
     def archive_urls(self):
         internet_archive = InternetArchive()
-        for url in self.scraped_urls:
-            self.stdout(f"🗄️ {url}", nl=False, carriage_return=True)
+        for is_last_element, url in signal_last(self.scraped_urls):
+            self.stdout(
+                f"🗄️  {url}", nl=is_last_element, carriage_return=not is_last_element,
+            )
             archive_url, cached = internet_archive.archive_page(url)
 
     def run(self):
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
+
             urls = self.collect_page_urls(current_url)
             self.scraped_urls.add(current_url)
-            self.stdout(f"🔎 {current_url}", nl=False, carriage_return=True)
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
+            self.stdout(
+                f"🔎 {current_url}",
+                nl=not bool(self.urls_to_scrape),
+                carriage_return=bool(self.urls_to_scrape),
+            )
 
-        self.stdout("")
-        self.stdout(f"Collected {len(self.scraped_urls)} URLs", fg="green")
+        self.stdout(f"📣 Collected {len(self.scraped_urls)} URLs")
         self.stdout(f"📦 Archiving")
-        self.stdout("")
 
         self.archive_urls()
+        self.stdout(f"✅ Everything has been archived")
 
     def stdout(self, text: str, **kwargs) -> None:
         if self._stdout:

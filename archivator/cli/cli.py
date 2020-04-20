@@ -1,26 +1,31 @@
+from time import sleep
+
 import click
+from click import secho as click_echo
 from url_normalize import url_normalize
 
 from archivator.archivator import Archivator
 from archivator.cli.exceptions import URLDoesNotExist
 from archivator.cli.validators import validate_url
-from click import secho as click_echo
+
+
+import subprocess
 
 
 @click.command()
 @click.argument("url", nargs=1)
-@click.option("-s", "--single", help="Scrape a single page.", is_flag=True)
-def archive(url, single):
+@click.option("-u", "--unique", help="Archive an unique page.", is_flag=True)
+def archive(url, unique):
     url = url_normalize(url)
     try:
         validated_url = validate_url(url)
     except URLDoesNotExist:
         echo("Error: This page does not seem to exist", fg="red", err=True)
     else:
-        archive_single(validated_url) if single else archive_page(validated_url)
+        archive_page(validated_url) if not unique else archive_unique(validated_url)
 
 
-def archive_single(url):
+def archive_unique(url):
     echo("Archiving...")
     archived_url, cached = Archivator.archive_url(url)
     if not cached:
@@ -41,12 +46,19 @@ def echo(
     err=False,
     color=None,
     carriage_return=False,
+    clean=True,
     **kwargs,
 ):
     """
     Patched click echo function.
     """
     message = message or ""
+
+    if clean:
+        rows, columns = subprocess.check_output(["stty", "size"]).split()
+        line_size = " ".join([" " for i in range(int(rows))])
+        click_echo(line_size + "\r", file, False, err, color, **kwargs)
+
     if carriage_return and nl:
         click_echo(message + "\r\n", file, False, err, color, **kwargs)
     elif carriage_return and not nl:
