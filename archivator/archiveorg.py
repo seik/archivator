@@ -12,7 +12,7 @@ class InternetArchive:
 
     class BlockedError(Exception):
         """
-        Returned when the internet archive has been banned from the site
+        Returned when archive.org has been banned from the site
         """
 
     class ArchiveError(Exception):
@@ -28,9 +28,7 @@ class InternetArchive:
         if has_error_header:
             error_header = response.headers["X-Archive-Wayback-Runtime-Error"]
             if error_header == "RobotAccessControlException: Blocked By Robots":
-                raise BlockedError(
-                    "internet archive returned blocked by robots.txt error"
-                )
+                raise BlockedError("archive.org returned blocked by robots.txt error")
             else:
                 raise self.ArchiveError(error_header)
 

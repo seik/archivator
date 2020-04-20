@@ -3,7 +3,6 @@ from time import sleep
 from typing import Tuple
 from urllib.parse import urlparse
 
-import click
 import requests
 from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
@@ -13,12 +12,14 @@ from archivator.archiveorg import InternetArchive
 
 
 class Archivator:
-    def __init__(self, start_url, https=True):
+    def __init__(self, start_url, stdout=None, https=True):
         parsed_url = urlparse(start_url)
         self.base_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
         self.start_url = start_url
         self.scraped_urls = set()
         self.urls_to_scrape = set([self.start_url])
+
+        self._stdout = stdout
 
     @staticmethod
     def archive_url(url: str) -> Tuple[str, bool]:
@@ -68,20 +69,31 @@ class Archivator:
     def archive_urls(self):
         internet_archive = InternetArchive()
         for url in self.scraped_urls:
-            internet_archive.archive_page(url)
+            self.stdout(f"Archiving {url}")
+
+            archive_url, cached = internet_archive.archive_page(url)
+
+            if not cached:
+                self.stdout(f"Archived in {archive_url}")
+            else:
+                self.stdout(f"Skipping, page was recently archived by archive.org")
 
     def run(self):
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
             urls = self.collect_page_urls(current_url)
             self.scraped_urls.add(current_url)
-            logger.debug(f"Scrapping {current_url}")
+            self.stdout(f"Scrapping {current_url}")
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
                     logger.debug(f"Found {url}")
 
-        click.echo(f"Collected {len(self.scraped_urls)} URLs")
-        click.echo(f"Start archiving")
+        self.stdout(f"Collected {len(self.scraped_urls)} URLs")
+        self.stdout(f"Start archiving")
 
         self.archive_urls()
+
+    def stdout(self, text: str) -> None:
+        if self._stdout:
+            self._stdout(text)

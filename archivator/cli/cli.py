@@ -14,7 +14,9 @@ def archive(url, single):
     try:
         validated_url = validate_url(url)
     except URLDoesNotExist:
-        click.echo("ERROR: This page does not seem to exist")
+        click.echo(
+            click.style("Error: This page does not seem to exist", fg="red"), err=True
+        )
     else:
         archive_single(validated_url) if single else archive_page(validated_url)
 
@@ -25,11 +27,14 @@ def archive_single(url):
     if not cached:
         click.echo(f"Archived in {archived_url}")
     else:
-        click.echo("Page was archived recently, saving skiped by internet archive.")
+        click.echo("Page was archived recently, saving skiped by archive.org.")
 
 
 def archive_page(url):
-    archivator = Archivator(url)
+    def echo(text: str) -> None:
+        click.echo(text)
+
+    archivator = Archivator(url, stdout=echo)
     archivator.run()
 
 
