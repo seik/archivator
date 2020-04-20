@@ -13,12 +13,21 @@ from archivator.archiveorg import InternetArchive
 
 
 class Archivator:
-    def __init__(self, start_url):
+    def __init__(self, start_url, https=True):
+        protocol = "https" if https else "http"
         parsed_url = urlparse(start_url)
-        self.base_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
-        self.start_url = start_url
+        self.base_url = (
+            f"{parsed_url.scheme or protocol}://{parsed_url.hostname}"
+            if parsed_url.hostname
+            else parsed_url.geturl()
+        )
+        self.start_url = (
+            start_url
+            if "https" in start_url or "http" in start_url
+            else f"{protocol}://{start_url}"
+        )
         self.scraped_urls = set()
-        self.urls_to_scrape = set([start_url])
+        self.urls_to_scrape = set([self.start_url])
 
     @staticmethod
     def archive_url(url: str) -> Tuple[str, bool]:

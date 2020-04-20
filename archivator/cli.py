@@ -8,7 +8,7 @@ def single_link(url):
     if not cached:
         click.echo(f"Archived in {archived_url}")
     else:
-        click.echo("Page was archived recently, skiped by internet archive.")
+        click.echo("Page was archived recently, saving skiped by internet archive.")
 
 
 def site(url):

@@ -32,16 +32,16 @@ class InternetArchive:
                     "internet archive returned blocked by robots.txt error"
                 )
             else:
-                raise ArchiveError(error_header)
+                raise self.ArchiveError(error_header)
 
         if response.status_code in [403, 502]:
-            raise ArchiveError(response.headers)
+            raise self.ArchiveError(response.headers)
 
         try:
             archive_id = response.headers["Content-Location"]
         except KeyError:
             # If it can't find that key raise the error
-            raise ArchiveError(
+            raise self.ArchiveError(
                 dict(status_code=response.status_code, headers=response.headers)
             )
 
