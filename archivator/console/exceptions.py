@@ -1,3 +1,2 @@
-
 class URLDoesNotExist(Exception):
     pass
