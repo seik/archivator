@@ -2,6 +2,7 @@ from typing import Tuple
 from urllib.parse import urljoin
 
 import requests
+from time import sleep
 
 
 class InternetArchive:
@@ -20,7 +21,15 @@ class InternetArchive:
         General exception for general errors
         """
 
-    def archive_page(self, url: str) -> Tuple[str, bool]:
+    class TooManyRequestsError(Exception):
+        """
+        General exception for general errors
+        """
+
+    def archive_page(self, url: str, retry: int = 0) -> Tuple[str, bool]:
+        if retry > 5:
+            raise self.TooManyRequestsError
+
         archive_url = f"{self.save_url}{url}"
         response = requests.get(archive_url, headers={"User-Agent": self.user_agent})
 
@@ -31,6 +40,11 @@ class InternetArchive:
                 raise BlockedError("archive.org returned blocked by robots.txt error")
             else:
                 raise self.ArchiveError(error_header)
+
+        if response.status_code == 429:
+            # We have been bamboozled, wait (not) a bit and retry
+            sleep(10)
+            return self.archive_page(url, retry=retry + 1)
 
         if response.status_code in [403, 502]:
             raise self.ArchiveError(response.headers)

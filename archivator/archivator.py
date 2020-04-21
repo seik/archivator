@@ -18,7 +18,7 @@ class Archivator:
         self.scraped_urls = set()
         self.urls_to_scrape = set([self.start_url])
 
-        self.cleo_command = cleo_command
+        self._cleo_command = cleo_command
 
     @staticmethod
     def archive_url(url: str) -> Tuple[str, bool]:
@@ -67,16 +67,13 @@ class Archivator:
 
     def archive_urls(self):
         internet_archive = InternetArchive()
-        if self.cleo_command:
-            self.cleo_command.write(f"")
+        self.write(f"")
         for url in self.scraped_urls:
-            if self.cleo_command:
-                self.cleo_command.overwrite(f"🗄️  {url}")
+            self.overwrite(f"🗄️  {url}")
             archive_url, cached = internet_archive.archive_page(url)
 
     def run(self):
-        if self.cleo_command:
-            self.cleo_command.write(f"")
+        self.write(f"")
 
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
@@ -87,13 +84,25 @@ class Archivator:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
 
-            if self.cleo_command:
-                self.cleo_command.overwrite(f"🕵️  {current_url}")
+            self.overwrite(f"🕵️  {current_url}")
 
-        if self.cleo_command:
-            self.cleo_command.line("")
-            self.cleo_command.line(f"📣 Collected {len(self.scraped_urls)} URLs")
-            self.cleo_command.line(f"📦 Archiving")
+        self.line("")
+        self.line(f"📣 Collected {len(self.scraped_urls)} URLs")
+        self.line(f"📦 Archiving")
 
         self.archive_urls()
-        self.cleo_command.line(f"✅ Everything has been archived")
+
+        self.line("")
+        self.line(f"✅ Everything has been archived")
+
+    def line(self, text: str) -> None:
+        if self._cleo_command:
+            self._cleo_command.line(text)
+
+    def write(self, text: str) -> None:
+        if self._cleo_command:
+            self._cleo_command.write(text)
+
+    def overwrite(self, text: str) -> None:
+        if self._cleo_command:
+            self._cleo_command.overwrite(text)

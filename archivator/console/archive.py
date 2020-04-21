@@ -4,6 +4,7 @@ from url_normalize import url_normalize
 from archivator.console.exceptions import URLDoesNotExist
 from archivator.archivator import Archivator
 from archivator.console.validators import validate_url
+from archivator.archiveorg import InternetArchive
 
 
 class ArchiveCommand(Command):
@@ -22,10 +23,14 @@ class ArchiveCommand(Command):
             validated_url = validate_url(url)
         except URLDoesNotExist:
             self.line("<error>This page does not seem to exist</error>")
-        else:
+
+        try:
             self.page(validated_url) if not self.option("unique") else self.unique(
                 validated_url
             )
+        except InternetArchive.TooManyRequestsError:
+            self.line("")
+            self.error("Limited by archive.org, please try again later")
 
     def unique(self, url):
         self.write("Archiving...")
