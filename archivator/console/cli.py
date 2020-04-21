@@ -56,8 +56,10 @@ def echo(
 
     if clean:
         rows, columns = subprocess.check_output(["stty", "size"]).split()
-        line_size = " ".join([" " for i in range(int(rows))])
-        click_echo(line_size + "\r", file, False, err, color, **kwargs)
+        line_size = " ".join([" " for i in range(int(columns) - 40)])
+        # print(int(columns))
+        # print(len(line_size))
+        click_echo("\033[K", file, False, err, color, **kwargs)
 
     if carriage_return and nl:
         click_echo(message + "\r\n", file, False, err, color, **kwargs)

@@ -11,14 +11,14 @@ from archivator.archiveorg import InternetArchive
 
 
 class Archivator:
-    def __init__(self, start_url, stdout=None, https=True):
+    def __init__(self, start_url, cleo_command=False):
         parsed_url = urlparse(start_url)
         self.base_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
         self.start_url = start_url
         self.scraped_urls = set()
         self.urls_to_scrape = set([self.start_url])
 
-        self._stdout = stdout
+        self.cleo_command = cleo_command
 
     @staticmethod
     def archive_url(url: str) -> Tuple[str, bool]:
@@ -67,13 +67,17 @@ class Archivator:
 
     def archive_urls(self):
         internet_archive = InternetArchive()
-        for is_last_element, url in signal_last(self.scraped_urls):
-            self.stdout(
-                f"🗄️  {url}", nl=is_last_element, carriage_return=not is_last_element,
-            )
+        if self.cleo_command:
+            self.cleo_command.write(f"")
+        for url in self.scraped_urls:
+            if self.cleo_command:
+                self.cleo_command.overwrite(f"🗄️  {url}")
             archive_url, cached = internet_archive.archive_page(url)
 
     def run(self):
+        if self.cleo_command:
+            self.cleo_command.write(f"")
+
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
 
@@ -82,18 +86,14 @@ class Archivator:
             for url in urls:
                 if url not in self.scraped_urls and url not in self.urls_to_scrape:
                     self.urls_to_scrape.add(url)
-            self.stdout(
-                f"🔎 {current_url}",
-                nl=not bool(self.urls_to_scrape),
-                carriage_return=bool(self.urls_to_scrape),
-            )
 
-        self.stdout(f"📣 Collected {len(self.scraped_urls)} URLs")
-        self.stdout(f"📦 Archiving")
+            if self.cleo_command:
+                self.cleo_command.overwrite(f"🕵️  {current_url}")
+
+        if self.cleo_command:
+            self.cleo_command.line("")
+            self.cleo_command.line(f"📣 Collected {len(self.scraped_urls)} URLs")
+            self.cleo_command.line(f"📦 Archiving")
 
         self.archive_urls()
-        self.stdout(f"✅ Everything has been archived")
-
-    def stdout(self, text: str, **kwargs) -> None:
-        if self._stdout:
-            self._stdout(text, **kwargs)
+        self.cleo_command.line(f"✅ Everything has been archived")

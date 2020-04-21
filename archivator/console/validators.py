@@ -1,7 +1,7 @@
 import requests
 from requests.exceptions import ConnectionError
 
-from archivator.cli.exceptions import URLDoesNotExist
+from archivator.console.exceptions import URLDoesNotExist
 
 
 def validate_url(url: str) -> str:
