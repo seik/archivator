@@ -35,7 +35,6 @@ class Archivator:
         return bool(url.startswith("/") or self.base_url in url)
 
     def check_is_base(self, url: str) -> bool:
-        # FIXME: This method doesn't cover all cases
         return url in ["/", f"{self.base_url}/", f"{self.base_url}"]
 
     def check_not_visited(self, url: str) -> bool:
@@ -70,14 +69,11 @@ class Archivator:
 
     def archive_urls(self):
         internet_archive = InternetArchive()
-        self.write(f"")
         for url in self.scraped_urls:
             self.overwrite(f"🗄️  {url}")
             archive_url, cached = internet_archive.archive_page(url)
 
     def run(self):
-        self.write(f"")
-
         while self.urls_to_scrape:
             current_url = self.urls_to_scrape.pop()
 
@@ -89,43 +85,42 @@ class Archivator:
 
             self.overwrite(f"🕵️  {current_url}")
 
-        self.line("")
-        self.line(f"📣 Collected {len(self.scraped_urls)} URLs")
-        self.line(f"📦 Archiving")
+        self.write("", new_line=True)
+        self.write(f"📣 Collected {len(self.scraped_urls)} URLs", new_line=True)
+        self.write(f"📦 Archiving", new_line=True)
 
         self.archive_urls()
 
-        self.line("")
-        self.line(f"✅ Everything has been archived")
+        self.write("", new_line=True)
+        self.write(f"✅ Everything has been archived", new_line=True)
 
-    def line(self, text: str) -> None:
-        if self._writer:
-            self._writer.write(text)
-            self._writer.flush()
-            self._last_message_len = len(text)
-            self._last_write_overwrite = False
+    def write(self, text: str, new_line=False) -> None:
+        if new_line:
+            text = text + "\n"
 
-    def write(self, text: str) -> None:
-        if self._writer:
-            self._writer.write(text)
-            self._writer.write("\n")
-            self._writer.flush()
+        self._writer.write(text)
+        self._writer.flush()
 
-            self._last_message_len = len(text)
-            self._last_write_overwrite = False
+        self._last_message_len = len(text)
+        self._last_write_overwrite = False
 
     def overwrite(self, text: str) -> None:
         if self._writer:
-            self._writer.write
-            self._writer.write(
-                " ".join(["\b" for _ in range(self._last_write_overwrite + 20)])
-            )
-            self._writer.flush()
-            self._writer.write(
-                " ".join([" " for _ in range(self._last_write_overwrite + 20)])
-            )
-            self._writer.write(f"\r{text}")
+            # backspace all
+            self._writer.write("\x08" * self._last_message_len)
+
+            # write the new message
+            self._writer.write(text)
             self._writer.flush()
 
+            fill = self._last_message_len - len(text)
+
+            if fill > 0:
+                # whitespace whatever has left
+                self._writer.write(" " * fill)
+                self._writer.flush()
+                # move the cursor back
+                self._writer.write("\x08" * fill)
+                self._writer.flush()
+
             self._last_message_len = len(text)
-            self._last_write_overwrite = True
