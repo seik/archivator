@@ -8,17 +8,20 @@ from bs4 import BeautifulSoup
 from bs4.element import SoupStrainer
 
 from archivator.archiveorg import InternetArchive
+import sys
 
 
 class Archivator:
-    def __init__(self, start_url, cleo_command=False):
+    def __init__(self, start_url, writer=sys.stdout):
         parsed_url = urlparse(start_url)
         self.base_url = f"{parsed_url.scheme}://{parsed_url.hostname}"
         self.start_url = start_url
         self.scraped_urls = set()
         self.urls_to_scrape = set([self.start_url])
 
-        self._cleo_command = cleo_command
+        self._writer = writer
+        self._last_message_len = 0
+        self._last_write_overwrite = False
 
     @staticmethod
     def archive_url(url: str) -> Tuple[str, bool]:
@@ -96,13 +99,33 @@ class Archivator:
         self.line(f"✅ Everything has been archived")
 
     def line(self, text: str) -> None:
-        if self._cleo_command:
-            self._cleo_command.line(text)
+        if self._writer:
+            self._writer.write(text)
+            self._writer.flush()
+            self._last_message_len = len(text)
+            self._last_write_overwrite = False
 
     def write(self, text: str) -> None:
-        if self._cleo_command:
-            self._cleo_command.write(text)
+        if self._writer:
+            self._writer.write(text)
+            self._writer.write("\n")
+            self._writer.flush()
+
+            self._last_message_len = len(text)
+            self._last_write_overwrite = False
 
     def overwrite(self, text: str) -> None:
-        if self._cleo_command:
-            self._cleo_command.overwrite(text)
+        if self._writer:
+            self._writer.write
+            self._writer.write(
+                " ".join(["\b" for _ in range(self._last_write_overwrite + 20)])
+            )
+            self._writer.flush()
+            self._writer.write(
+                " ".join([" " for _ in range(self._last_write_overwrite + 20)])
+            )
+            self._writer.write(f"\r{text}")
+            self._writer.flush()
+
+            self._last_message_len = len(text)
+            self._last_write_overwrite = True
