@@ -23,14 +23,14 @@ class ArchiveCommand(Command):
             validated_url = validate_url(url)
         except URLDoesNotExist:
             self.line("<error>This page does not seem to exist</error>")
-
-        try:
-            self.page(validated_url) if not self.option("unique") else self.unique(
-                validated_url
-            )
-        except InternetArchive.TooManyRequestsError:
-            self.line("")
-            self.error("Limited by archive.org, please try again later")
+        else:
+            try:
+                self.page(validated_url) if not self.option("unique") else self.unique(
+                    validated_url
+                )
+            except InternetArchive.TooManyRequestsError:
+                self.line("")
+                self.error("Limited by archive.org, please try again later")
 
     def unique(self, url):
         self.write("Archiving...")
